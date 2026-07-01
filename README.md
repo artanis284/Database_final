@@ -22,6 +22,8 @@ init_mysql_db.bat
 1. `mysql/schema.sql`
 2. `mysql/seed_data.sql`
 
+`seed_data.sql` 会创建课程演示默认管理员账号：用户名 `admin`，密码 `admin123`。普通用户可在登录页自行注册。
+
 备用命令行方式：
 ```bash
 mysql -u root -p < mysql/schema.sql
@@ -37,8 +39,9 @@ python app_mysql.py
 Windows 下可双击 `start_mysql_app.bat`。脚本会优先使用系统 Python，并在缺少依赖时提示安装命令。启动后访问 `http://127.0.0.1:8000`。
 
 ## 功能验证
+- 使用默认管理员账号 `admin` / `admin123` 登录，检查审核、修改、归档、删除等管理员功能。
 - 注册普通用户并登录。
-- 使用标题、作者、机构、年份范围、关键词进行组合检索。
+- 使用标题、作者、年份范围、关键词进行组合检索。
 - 上传 PDF，检查系统是否预填表单但不直接入库。
 - 新增论文，普通用户提交后状态为 pending。
 - 新增作者必须填写唯一 ORCID；新增论文必须填写唯一 DOI，并选择作者表中的作者。

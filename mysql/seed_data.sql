@@ -1,6 +1,6 @@
 -- Clean seed script for the final user-provided literature database.
 -- It creates only the administrator account and UI preference rows.
--- No demo papers, authors, institutions, keywords, favorites, tags, or
+-- No demo papers, authors, keywords, favorites, or
 -- citations are inserted here.
 --
 -- Rebuild order:
@@ -12,8 +12,8 @@ USE literature_management;
 INSERT IGNORE INTO sys_user(username, password_hash, role, email) VALUES
 ('admin', SHA2('admin123', 256), 'admin', 'admin@example.com');
 
-INSERT IGNORE INTO user_preference(user_id, language, font_family, font_size)
-SELECT user_id, 'zh', 'system', 'normal'
+INSERT IGNORE INTO user_preference(user_id, language)
+SELECT user_id, 'zh'
 FROM sys_user
 WHERE username = 'admin';
 

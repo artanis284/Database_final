@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import csv
 import io
@@ -85,7 +85,6 @@ TEXT = {
         "add_keyword": "添加",
         "citations": "引用",
         "query_placeholder": "标题 / 摘要 / DOI / 作者",
-        "institution": "单位",
         "year": "年份",
         "year_from": "起始年份",
         "year_to": "结束年份",
@@ -206,7 +205,6 @@ TEXT = {
         "add_keyword": "Add",
         "citations": "Citations",
         "query_placeholder": "Title / abstract / DOI / author",
-        "institution": "Institution",
         "year": "Year",
         "year_from": "From Year",
         "year_to": "To Year",
@@ -508,7 +506,7 @@ def keyword_filter_url(query: dict, keyword_id: int, key: str = "fav_keyword", a
         selected.append(keyword_id)
 
     params: list[tuple[str, str]] = []
-    for preserved_key in ("q", "year", "year_from", "year_to", "keyword", "institution", "status"):
+    for preserved_key in ("q", "year", "year_from", "year_to", "keyword", "status"):
         value = query.get(preserved_key)
         if value:
             params.append((preserved_key, str(value)))
@@ -525,7 +523,7 @@ def keyword_filter_url(query: dict, keyword_id: int, key: str = "fav_keyword", a
 
 def keyword_text_filter_url(query: dict, remove_word: str = "") -> str:
     params: list[tuple[str, str]] = []
-    for preserved_key in ("q", "year", "year_from", "year_to", "institution", "status"):
+    for preserved_key in ("q", "year", "year_from", "year_to", "status"):
         value = query.get(preserved_key)
         if value:
             params.append((preserved_key, str(value)))
@@ -728,8 +726,8 @@ def register_user(username: str, password: str, email: str = "") -> None:
     )
     user_id = current_user_id(username)
     run_sql(
-        "INSERT IGNORE INTO user_preference(user_id, language, font_family, font_size) "
-        f"VALUES ({user_id}, 'zh', 'system', 'normal');"
+        "INSERT IGNORE INTO user_preference(user_id, language) "
+        f"VALUES ({user_id}, 'zh');"
     )
 
 
@@ -751,8 +749,8 @@ def clear_login_cookie_header() -> str:
 
 def preferences(user_id: int) -> dict[str, str]:
     run_sql(
-        "INSERT IGNORE INTO user_preference(user_id, language, font_family, font_size) "
-        f"VALUES ({user_id}, 'zh', 'system', 'normal');"
+        "INSERT IGNORE INTO user_preference(user_id, language) "
+        f"VALUES ({user_id}, 'zh');"
     )
     rows = run_sql(
         f"""
@@ -772,8 +770,8 @@ def preferences(user_id: int) -> dict[str, str]:
 def update_preferences(user_id: int, data: dict) -> None:
     language = data.get("language") if data.get("language") in {"zh", "en"} else "zh"
     run_sql(
-        "INSERT INTO user_preference(user_id, language, font_family, font_size) VALUES "
-        f"({user_id}, {quote(language)}, 'system', 'normal') "
+        "INSERT INTO user_preference(user_id, language) VALUES "
+        f"({user_id}, {quote(language)}) "
         "ON DUPLICATE KEY UPDATE "
         "language = VALUES(language);"
     )
@@ -885,8 +883,8 @@ def create_paper(data: dict, user_id: int = 1) -> int:
 
     for order, author_id in enumerate(data.get("author_ids") or [], 1):
         statements.append(
-            "INSERT IGNORE INTO paper_author(paper_id, author_id, author_order, is_corresponding) "
-            f"SELECT @new_paper_id, author_id, {order}, {1 if order == 1 else 0} "
+            "INSERT IGNORE INTO paper_author(paper_id, author_id, author_order) "
+            f"SELECT @new_paper_id, author_id, {order} "
             f"FROM author WHERE author_id = {int(author_id)} LIMIT 1"
         )
 
@@ -992,8 +990,8 @@ def update_paper(paper_id: int, data: dict, user_id: int = 1) -> None:
     )
     for order, author_id in enumerate(data.get("author_ids") or [], 1):
         statements.append(
-            "INSERT IGNORE INTO paper_author(paper_id, author_id, author_order, is_corresponding) "
-            f"SELECT {paper_id}, author_id, {order}, {1 if order == 1 else 0} "
+            "INSERT IGNORE INTO paper_author(paper_id, author_id, author_order) "
+            f"SELECT {paper_id}, author_id, {order} "
             f"FROM author WHERE author_id = {int(author_id)} LIMIT 1"
         )
     statements.append(f"DELETE FROM paper_keyword WHERE paper_id = {paper_id}")
@@ -1007,12 +1005,6 @@ def update_paper(paper_id: int, data: dict, user_id: int = 1) -> None:
             f"SELECT {paper_id}, keyword_id FROM keyword "
             f"WHERE word = {quote(keyword)} AND category = 'topic' LIMIT 1"
         )
-    statements.append(
-        "INSERT INTO paper_version(paper_id, version_no, change_log, operator_id) "
-        f"SELECT {paper_id}, COALESCE(MAX(version_no), 0) + 1, '管理员修改并发布', {int(user_id or 1)} "
-        "FROM paper_version "
-        f"WHERE paper_id = {paper_id}"
-    )
     run_sql(";\n".join(statements) + ";")
 
 
@@ -1028,11 +1020,9 @@ def paper_rows(query: dict, user_id: int | None = None, is_admin: bool = False) 
         clauses.append(
             "("
             f"title LIKE {quote(q)} OR abstract LIKE {quote(q)} OR doi LIKE {quote(q)} "
-            f"OR authors LIKE {quote(q)} OR institutions LIKE {quote(q)}"
+            f"OR authors LIKE {quote(q)}"
             ")"
         )
-    if query.get("institution"):
-        clauses.append(f"institutions LIKE {quote('%' + query['institution'] + '%')}")
     if query.get("year") and re.fullmatch(r"\d{4}", str(query["year"])):
         clauses.append(f"YEAR(publish_date) = {int(query['year'])}")
     if query.get("year_from") and re.fullmatch(r"\d{4}", str(query["year_from"])):
@@ -1069,7 +1059,7 @@ def paper_rows(query: dict, user_id: int | None = None, is_admin: bool = False) 
         SELECT
           paper_id, title, abstract, publish_date, doi, venue_name,
           status,
-          authors, institutions, keywords,
+          authors, keywords,
           reference_count AS ref_count,
           cited_by_count,
           EXISTS(
@@ -1516,7 +1506,7 @@ def render_index(
         f"""
         <tr>
           <td><strong>{html_escape(row.get('title'))}</strong><span>{html_escape(row.get('doi') or t['no_doi'])}</span>{f"<i class='status-badge status-{html_escape(row.get('status') or 'active')}'>{html_escape(status_label(row.get('status')))}</i>" if is_admin else ""}</td>
-          <td>{html_escape(row.get('authors') or '-')}<span>{html_escape(row.get('institutions') or '-')}</span></td>
+          <td>{html_escape(row.get('authors') or '-')}</td>
           <td>{html_escape(row.get('venue_name') or '-')}<span>{html_escape(row.get('publish_date'))}</span></td>
           <td>{html_escape(row.get('keywords') or '-')}</td>
           <td><b>{html_escape(row.get('ref_count') or 0)}</b> {t['reference_label']} / <b>{html_escape(row.get('cited_by_count') or 0)}</b> {t['cited_by_label']}</td>
@@ -1886,7 +1876,6 @@ document.addEventListener('change', function (event) {
             {keyword_options_html}
           </select>
         </div>
-        <input name="institution" placeholder="{t['institution']}" value="{html_escape(query.get('institution',''))}">
         {''.join(f'<input type="hidden" name="fav_keyword" value="{html_escape(item)}">' for item in selected_keyword_ids(query))}
         {''.join(f'<input type="hidden" name="keyword_filter" value="{html_escape(word)}">' for word in search_keyword_filters)}
         <button>{t['combined_search']}</button>
@@ -2675,3 +2664,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+

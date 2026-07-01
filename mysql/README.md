@@ -62,24 +62,19 @@ SELECT * FROM v_paper_detail ORDER BY paper_id DESC LIMIT 20;
 - `paper`：论文元数据
 - `venue`：期刊、会议、预印本等来源
 - `author`：作者
-- `institution`：机构
-- `keyword`：关键词和领域标签
-- `tag`：用户自定义标签
-- `paper_version`：论文版本记录
-- `audit_log`：审计日志
+- `keyword`：关键词和领域词
 
 核心关联表：
 
 - `paper_author`：论文和作者的多对多关系
-- `paper_keyword`：论文和关键词/领域标签的多对多关系
-- `author_institution`：作者和机构的多对多关系
+- `paper_keyword`：论文和关键词/领域词的多对多关系
 - `favorite`：用户收藏论文
-- `paper_tag`：论文和标签的多对多关系
+- `favorite_keyword`：用户收藏关键词
 - `citation`：论文引用论文的自关联关系
 
 高级对象：
 
-- `v_paper_detail`：论文详情聚合视图，包含作者、单位、关键词、引用数和被引数
+- `v_paper_detail`：论文详情聚合视图，包含作者、关键词、引用数和被引数
 - `sp_create_paper`：新增论文存储过程
 - `trg_paper_before_insert` / `trg_paper_before_update`：禁止未来发表日期
 - `trg_citation_before_insert` / `trg_citation_before_update`：禁止论文自引用
